@@ -102,6 +102,6 @@ This project uses the **BigCloneBench** dataset from the CodeXGlue benchmark, wh
 
 - Pre\-trained Model: [microsoft/codebert\-base](https://huggingface.co/microsoft/codebert-base)
 
-- Dataset: [CodeXGlue BigCloneBench](https://huggingface.co/datasets/code_x_glue_cc_clone_detection_big_clone_bench)
+- Dataset: [CodeXGlue BigCloneBench](https://github.com/microsoft/CodeXGLUE/tree/main/Code-Code/Clone-detection-BigCloneBench)
 
 - Code Parsing: [Tree\-sitter](https://github.com/tree-sitter/tree-sitter)
