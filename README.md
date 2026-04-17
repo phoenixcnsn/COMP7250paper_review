@@ -28,7 +28,6 @@ pip install torch transformers datasets tree-sitter tree-sitter-java numpy tqdm 
 ```Plain
 .
 ├── data_process.py          # Dataset preprocessing script, processes train/validation/test sets
-├── data_process_test.py     # Separate preprocessing script for test set
 ├── main.py                  # Main script for model training and evaluation, includes custom model implementation
 └── test.py                  # Test script for data flow extraction function, to verify the parsing function
 
