@@ -7,7 +7,7 @@ Based on the pre\-trained CodeBERT, we introduce data flow dependencies between 
 
 ## Core Features
 
-- **Data Flow\-Aware Attention Mask**: Based on the data flow dependencies between variables in the code, we restrict the scope of attention calculation, allowing only variables with data dependencies to perform attention interaction, enhancing the model\&\#39;s understanding of code semantics\.
+- **Data Flow\-Aware Attention Mask**: Based on the data flow dependencies between variables in the code, we restrict the scope of attention calculation, allowing only variables with data dependencies to perform attention interaction, enhancing the models understanding of code semantics\.
 
 - **Custom Position Embedding**: We design special position ids for variable tokens to adapt to the position encoding range of CodeBERT, solving the position encoding problem of long sequences\.
 
@@ -47,11 +47,11 @@ python data_process.py
 > 
 > - This step will automatically download a \~100MB dataset
 > 
-> - After processing, three directories `processed\_train`, `processed\_val`, `processed\_test` will be generated to store the preprocessed dataset
+> - After processing, three directories `processed_train`, `processed_val`, `processed_test` will be generated to store the preprocessed dataset
 > 
 > 
 
-### 2\. Model Training \&amp; Evaluation
+### 2\. Model Training \& Evaluation
 
 After preprocessing, run the main script to start the training and evaluation process:
 
@@ -59,15 +59,15 @@ After preprocessing, run the main script to start the training and evaluation pr
 python main.py
 ```
 
-Training \&amp; Evaluation Process:
+Training \& Evaluation Process:
 
 - The script will automatically detect and use GPU for training \(if CUDA is available\)
 
 - After each training epoch, the model will automatically be evaluated on the validation set
 
-- The best\-performing model on the validation set will be automatically saved to `checkpoints/best\_model\.pth`
+- The best\-performing model on the validation set will be automatically saved to `checkpoints/best_model.pth`
 
-- Training logs \(training loss, gradient norm, validation accuracy, learning rate, etc\.\) will be saved to `checkpoints/training\_log\.csv`
+- Training logs \(training loss, gradient norm, validation accuracy, learning rate, etc\.\) will be saved to `checkpoints/training_log.csv`
 
 - After all training is completed, the best model will be automatically loaded for final evaluation on the test set, and the test set accuracy will be output\.
 
@@ -83,7 +83,7 @@ This script uses a sample Java code to test the parsing capability of Tree\-sitt
 
 ## Configuration Adjustment
 
-You can modify the configuration parameters at the top of `main\.py` to adapt to your hardware environment and training requirements:
+You can modify the configuration parameters at the top of `main.py` to adapt to your hardware environment and training requirements:
 
 ```python
 MAX_SEQ_LEN = 448        # Maximum input sequence length
