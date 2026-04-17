@@ -1,4 +1,4 @@
-# English Code Clone Detection Project README
+# README
 
 ## Project Introduction
 
