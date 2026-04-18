@@ -21,6 +21,7 @@ First install the required Python dependencies:
 
 ```bash
 pip install torch transformers datasets tree-sitter tree-sitter-java numpy tqdm pandas
+#This program runs on a server with an NVIDIA A100 40G.
 ```
 
 ## Project Structure
@@ -34,8 +35,17 @@ pip install torch transformers datasets tree-sitter tree-sitter-java numpy tqdm 
 ```
 
 ## Quick Start
+### 1\. Function Test
 
-### 1\. Data Preprocessing
+Before starting to train, if you want to verify whether the data flow extraction function works properly, you can run the test script:
+
+```bash
+python test.py
+```
+
+This script uses a sample Java code to test the parsing capability of Tree\-sitter, outputs the extracted variable list and data flow edges, to verify whether the parsing function works normally\.
+
+### 2\. Data Preprocessing
 
 First run the data preprocessing script\. This script will automatically download the BigCloneBench dataset, complete data flow extraction, input formatting and other preprocessing work, and save the processed dataset locally:
 
@@ -51,7 +61,7 @@ python data_process.py
 > 
 > 
 
-### 2\. Model Training \& Evaluation
+### 3\. Model Training \& Evaluation
 
 After preprocessing, run the main script to start the training and evaluation process:
 
@@ -71,15 +81,6 @@ Training \& Evaluation Process:
 
 - After all training is completed, the best model will be automatically loaded for final evaluation on the test set, and the test set accuracy will be output\.
 
-### 3\. Function Test
-
-If you want to verify whether the data flow extraction function works properly, you can run the test script:
-
-```bash
-python test.py
-```
-
-This script uses a sample Java code to test the parsing capability of Tree\-sitter, outputs the extracted variable list and data flow edges, to verify whether the parsing function works normally\.
 
 ## Configuration Adjustment
 

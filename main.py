@@ -308,19 +308,19 @@ def train_epoch(model, dataloader, optimizer, scheduler, device, scaler):
             scaler.scale(loss).backward()
             scaler.unscale_(optimizer)
 
-            # ----- 先进行梯度裁剪，再计算范数 -----
+            # ----- Perform gradient clipping first, and then compute the norm -----
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
 
-            # 计算裁剪后的梯度范数
+            # Calculate the gradient norm after clipping.
             grad_norm = 0.0
             for p in model.parameters():
                 if p.grad is not None:
                     grad_norm += p.grad.data.norm(2).item() ** 2
             grad_norm = grad_norm ** 0.5
 
-            # 检测梯度是否异常（inf 或 nan）
+            # Detect abnormal gradients (inf or nan values)
             if torch.isinf(torch.tensor(grad_norm)) or torch.isnan(torch.tensor(grad_norm)):
-                # 跳过此 batch，不更新参数，不累加 loss 和 grad_norm
+                # Skip the current batch, without updating parameters, accumulating loss or gradient norm
                 scaler.update()
                 progress.set_postfix(loss=loss.item(), grad_norm="SKIP")
                 continue
@@ -339,10 +339,15 @@ def train_epoch(model, dataloader, optimizer, scheduler, device, scaler):
     avg_grad_norm = total_grad_norm / valid_batch_count if valid_batch_count > 0 else 0
     return avg_loss, avg_grad_norm
 
+
 def evaluate(model, dataloader, device):
+    """
+    Evaluate the model and return accuracy, precision, recall, f1.
+    All metrics are for the positive class (label=1).
+    """
     model.eval()
-    correct = 0
-    total = 0
+    all_preds = []
+    all_labels = []
     with tqdm(
             dataloader,
             desc="Evaluating",
@@ -367,12 +372,29 @@ def evaluate(model, dataloader, device):
                     input_ids2, attention_mask2, position_ids2
                 )
                 preds = torch.argmax(logits, dim=1)
-                correct += (preds == labels).sum().item()
-                total += labels.size(0)
-                progress.set_postfix(acc=f"{correct / total:.4f}")
+                all_preds.extend(preds.cpu().numpy())
+                all_labels.extend(labels.cpu().numpy())
+                # Update progress postfix with current accuracy
+                if len(all_labels) > 0:
+                    curr_acc = (np.array(all_preds) == np.array(all_labels)).mean()
+                    progress.set_postfix(acc=f"{curr_acc:.4f}")
 
     sys.stdout.flush()
-    return correct / total
+    # Convert to numpy arrays
+    preds = np.array(all_preds)
+    labels = np.array(all_labels)
+    # Calculate metrics
+    tp = np.sum((preds == 1) & (labels == 1))
+    fp = np.sum((preds == 1) & (labels == 0))
+    fn = np.sum((preds == 0) & (labels == 1))
+    tn = np.sum((preds == 0) & (labels == 0))
+
+    accuracy = (tp + tn) / (tp + tn + fp + fn) if (tp + tn + fp + fn) > 0 else 0.0
+    precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
+    recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+    f1 = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0.0
+
+    return accuracy, precision, recall, f1
 
 
 def collate_fn(batch):
@@ -450,42 +472,43 @@ def main():
         "train_loss": [],
         "train_grad_norm": [],
         "val_acc": [],
+        "val_precision": [],
+        "val_recall": [],
+        "val_f1": [],
         "learning_rate": []
     }
 
-    # Optional: TensorBoard
-    # from torch.utils.tensorboard import SummaryWriter
-    # writer = SummaryWriter(log_dir=os.path.join(SAVE_DIR, "tensorboard"))
-
-    best_acc = 0
+    best_val_f1 = 0.0  # Use F1 as the criterion for saving best model (can also use accuracy)
     for epoch in range(EPOCHS):
         print("\n" + "=" * 50)
         print(f"Epoch {epoch + 1}/{EPOCHS}")
 
         train_loss, train_grad_norm = train_epoch(model, train_loader, optimizer, scheduler, DEVICE, scaler)
-        val_acc = evaluate(model, val_loader, DEVICE)
+        val_acc, val_precision, val_recall, val_f1 = evaluate(model, val_loader, DEVICE)
         current_lr = scheduler.get_last_lr()[0]
 
         print(
-            f"Train Loss: {train_loss:.4f} | Train Grad Norm: {train_grad_norm:.4f} | Val Acc: {val_acc:.4f} | LR: {current_lr:.2e}")
+            f"Train Loss: {train_loss:.4f} | Train Grad Norm: {train_grad_norm:.4f}"
+        )
+        print(
+            f"Val Acc: {val_acc:.4f} | Val Precision: {val_precision:.4f} | Val Recall: {val_recall:.4f} | Val F1: {val_f1:.4f} | LR: {current_lr:.2e}"
+        )
 
         # Record
         records["epoch"].append(epoch + 1)
         records["train_loss"].append(train_loss)
         records["train_grad_norm"].append(train_grad_norm)
         records["val_acc"].append(val_acc)
+        records["val_precision"].append(val_precision)
+        records["val_recall"].append(val_recall)
+        records["val_f1"].append(val_f1)
         records["learning_rate"].append(current_lr)
 
-        # Optional TensorBoard logging
-        # writer.add_scalar("Loss/train", train_loss, epoch)
-        # writer.add_scalar("GradNorm/train", train_grad_norm, epoch)
-        # writer.add_scalar("Accuracy/val", val_acc, epoch)
-        # writer.add_scalar("LR", current_lr, epoch)
-
-        if val_acc > best_acc:
-            best_acc = val_acc
+        # Save best model based on validation F1 score (or accuracy, change as needed)
+        if val_f1 > best_val_f1:
+            best_val_f1 = val_f1
             torch.save(model.state_dict(), os.path.join(SAVE_DIR, "best_model.pth"))
-            print("Saved best model.")
+            print("Saved best model (based on validation F1).")
 
     # Save CSV log
     import pandas as pd
@@ -493,13 +516,16 @@ def main():
     df.to_csv(os.path.join(SAVE_DIR, "training_log.csv"), index=False)
     print(f"Training log saved to {os.path.join(SAVE_DIR, 'training_log.csv')}")
 
-    # Optional: close TensorBoard writer
-    # writer.close()
-
-    # Evaluate on test set
+    # Evaluate on test set using best model
     model.load_state_dict(torch.load(os.path.join(SAVE_DIR, "best_model.pth")))
-    test_acc = evaluate(model, test_loader, DEVICE)
-    print(f"Test Accuracy: {test_acc:.4f}")
+    test_acc, test_precision, test_recall, test_f1 = evaluate(model, test_loader, DEVICE)
+    print("\n" + "=" * 50)
+    print("Test Set Results:")
+    print(f"Accuracy:  {test_acc:.4f}")
+    print(f"Precision: {test_precision:.4f}")
+    print(f"Recall:    {test_recall:.4f}")
+    print(f"F1 Score:  {test_f1:.4f}")
+    print("=" * 50)
 
 
 if __name__ == "__main__":
