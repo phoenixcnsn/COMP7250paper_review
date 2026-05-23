@@ -90,7 +90,7 @@ You can modify the configuration parameters at the top of `main.py` to adapt to 
 MAX_SEQ_LEN = 448        # Maximum input sequence length
 BATCH_SIZE = 4           # Training batch size, you can reduce it if GPU memory is insufficient
 EPOCHS = 3               # Number of training epochs
-LEARNING_RATE = 1e-5     # Initial learning rate
+LEARNING_RATE = 2e-5     # Initial learning rate
 WARMUP_RATIO = 0.1       # The ratio of warmup steps to total training steps
 WEIGHT_DECAY = 0.01      # Weight decay coefficient
 ```
